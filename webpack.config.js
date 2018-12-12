@@ -1,5 +1,9 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const dotenv = require("dotenv");
+const webpack = require("webpack");
+
+dotenv.config();
 
 module.exports = {
   entry: "./src/index.js",
@@ -20,6 +24,7 @@ module.exports = {
     extensions: [".webpack.js", ".web.js", ".js"]
   },
   plugins: [
+    new webpack.EnvironmentPlugin(["NODE_ENV", "PUSHER_APP_ID", "PUSHER_KEY"]),
     new HtmlWebpackPlugin({
       template: "./src/index.html"
     })

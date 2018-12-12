@@ -1,9 +1,14 @@
 import Pusher from "pusher";
+import dotenv from "dotenv";
+
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 var pusher = new Pusher({
-  appId: "671249",
-  key: "458da97f25ff32a9a7e0",
-  secret: "a24498efa0b396a05b33",
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
   cluster: "us2",
   encrypted: true
 });
@@ -14,7 +19,7 @@ var pusher = new Pusher({
  * @param callback {function} - should return either an error or a response object
  */
 exports.handler = function handler(event, context, callback) {
-  pusher.trigger("my-channel", "my-event", {
+  pusher.trigger("scrabble-registration", "my-event", {
     message: "hello world"
   });
   callback(null, {

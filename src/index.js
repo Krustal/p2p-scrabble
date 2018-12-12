@@ -3,7 +3,7 @@ import Pusher from "pusher-js";
 
 Pusher.logToConsole = process.env.NODE_ENV !== "production";
 
-const pusher = new Pusher("458da97f25ff32a9a7e0", {
+const pusher = new Pusher(process.env.PUSHER_KEY, {
   cluster: "us2",
   forceTLS: true
 });
