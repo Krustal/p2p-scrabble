@@ -1,4 +1,4 @@
-import Pusher from "pusher";
+import Pusher from "pusher-js";
 // TODO: The initial goal is just to connect 2 clients with a simple chat
 
 Pusher.logToConsole = process.env.NODE_ENV !== "production";

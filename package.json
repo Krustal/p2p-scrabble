@@ -27,6 +27,7 @@
     "webpack-dev-server": "^3.1.10"
   },
   "dependencies": {
-    "pusher": "^2.2.0"
+    "pusher": "^2.2.0",
+    "pusher-js": "^4.3.1"
   }
 }
