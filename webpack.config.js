@@ -21,6 +21,7 @@ module.exports = {
       template: "./src/index.html"
     })
   ],
+  devtool: "inline-source-map",
   devServer: {
     contentBase: path.join(__dirname, "dist"),
     compress: true,
