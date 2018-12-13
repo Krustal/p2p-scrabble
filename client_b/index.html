@@ -1,0 +1,125 @@
+<html>
+<header>
+
+</header>
+<body>
+    <p>CLIENT B</p>
+
+    <button id="checkForOffersAndSetRemoteDescription" name="checkForOffersAndSetRemoteDescription" class="buttonleft">
+        Check for offers and set remote description
+    </button>
+
+    <button id="sendAnswerToSignalingServer" name="sendAnswerToSignalingServer" class="buttonleft">
+        Send answer to signaling server
+    </button>
+
+    <button id="fetchAndApplyIce" name="fetchAndApplyIce" class="buttonleft">
+        Fetch and apply ICE candidates
+    </button>
+
+    <button id="sendMessage" name="sendMessage">
+        SEND MESSAGE
+    </button>
+</body>
+
+<script>
+  const clientBConnection = new RTCPeerConnection();
+  let clientBAnswer;
+  let sendChannel;
+
+  clientBConnection.ondatachannel = (event) => {
+    console.log("CLIENT B ONDATACHANNEL FIRED, SETTING UP CHANNEL CALLBACKS");
+    const receiveChannel = event.channel;
+    receiveChannel.onmessage = (e) => console.log("B RECEIVED MESSAGE:", e.data);
+    receiveChannel.onopen = (e) => {
+      console.log("B ON OPEN:", e);
+      sendChannel = e.srcElement
+    };
+    receiveChannel.onclose = (e) => console.log("B ON CLOSE", e);
+  };
+
+  clientBConnection.onicecandidate = (event) => {
+    console.log("onicecandidate fired")
+    if (event.candidate) {
+      sendIceCandidate({
+        type: "candidate",
+        candidate: event.candidate
+      });
+    }
+  };
+
+  const sendIceCandidate = (candidate) => {
+    fetch('http://localhost:3000/candidates', {
+      method: "POST",
+      mode: "cors",
+      cache: "no-cache",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify(candidate)
+    })
+      .then(resp => resp.json())
+      .then(json => console.log(json))
+      .catch(e => console.log(e))
+  };
+
+  const checkForOffersAndSetRemoteDescription = () => {
+    fetch('http://localhost:3000/offers')
+      .then(resp => resp.json())
+      .then(description => clientBConnection.setRemoteDescription(description))
+      .then(() => clientBConnection.createAnswer())
+      .then(answer => {
+        clientBConnection.setLocalDescription(answer)
+        clientBAnswer = answer
+      })
+  };
+
+  const sendAnswerToSignalingServer = () => {
+    if (!clientBAnswer) {
+      console.error('YOU MUST FIRST CREATE AND SET A LOCAL DESCRIPTION FOR THIS CLIENT')
+    }
+
+    fetch('http://localhost:3000/answers', {
+      method: "POST",
+      mode: "cors",
+      cache: "no-cache",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify(clientBAnswer)
+    })
+      .then(resp => resp.json())
+      .then(json => console.log(json))
+      .catch(e => console.log(e))
+  };
+
+  const fetchAndApplyIce = () => {
+    fetch('http://localhost:3000/candidates')
+      .then(resp => resp.json())
+      .then(json => {
+        console.log("found these candidates:", json)
+        json.candidates.forEach(c => clientBConnection.addIceCandidate(c.candidate))
+      })
+  };
+
+  const sendMessage = () => {
+    sendChannel.send("FOO BAR BANG");
+  };
+
+  window.addEventListener('load', function() {
+    const createAndSendOffer = document.getElementById('checkForOffersAndSetRemoteDescription');
+    createAndSendOffer.addEventListener('click', checkForOffersAndSetRemoteDescription);
+
+    const sendAnswerToSignalingServerButton = document.getElementById('sendAnswerToSignalingServer');
+    sendAnswerToSignalingServerButton.addEventListener('click', sendAnswerToSignalingServer);
+
+    const fetchAndApplyIceButton = document.getElementById('fetchAndApplyIce');
+    fetchAndApplyIceButton.addEventListener('click', fetchAndApplyIce);
+
+    const sendMessageButtond = document.getElementById('sendMessage');
+    sendMessageButtond.addEventListener('click', sendMessage)
+  })
+</script>
+</html>

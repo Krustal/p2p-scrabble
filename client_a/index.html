@@ -1,0 +1,120 @@
+<html>
+<head>
+</head>
+
+<body>
+<p>CLIENT A</p>
+    <button id="createAndSendOffer" name="createAndSendOffer" class="buttonleft">
+        Create Offer and Send Offer to Signaling Server
+    </button>
+
+    <button id="checkAnswerAndSetRemoteDescription" name="checkAnswerAndSetRemoteDescription" class="buttonleft">
+        Check for answer and set remote description
+    </button>
+
+    <button id="fetchAndApplyIce" name="fetchAndApplyIce" class="buttonleft">
+        Fetch and apply ICE candidates
+    </button>
+
+    <button id="sendMessage" name="sendMessage">
+        SEND MESSAGE
+    </button>
+</body>
+
+<script>
+    const clientAConnection = new RTCPeerConnection();
+
+    const sendChannel = clientAConnection.createDataChannel("sendChannel");
+    sendChannel.onopen = (e) => console.log("A ON OPEN", e);
+    sendChannel.onclose = (e) => console.log("A ON CLOSE", e);
+    sendChannel.onmessage = (e) => console.log("A, RECEIVED MESSAGE:", e.data);
+
+    clientAConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log("Sending Candidate")
+        sendIceCandidate({
+          type: "candidate",
+          candidate: event.candidate
+        });
+      }
+    };
+
+    const sendIceCandidate = (candidate) => {
+      fetch('http://localhost:3000/candidates', {
+        method: "POST",
+        mode: "cors",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify(candidate)
+      })
+        .then(resp => resp.json())
+        .then(json => console.log(json))
+        .catch(e => console.log(e))
+    };
+
+    const sendMessage = () => {
+      sendChannel.send("FOO BAR BANG");
+    };
+
+    const sendOfferToSignalServer = (offer) => {
+        fetch('http://localhost:3000/offers', {
+            method: "POST",
+            mode: "cors",
+            cache: "no-cache",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+            },
+            body: JSON.stringify(offer)
+        })
+          .then(resp => resp.json())
+          .then(json => console.log(json))
+          .catch(e => console.log(e))
+    };
+
+    const createOfferAndSendToSignalingServer = () => {
+      let localSdpOffer;
+      clientAConnection.createOffer()
+        .then(offer => {
+          localSdpOffer = offer;
+          clientAConnection.setLocalDescription(offer)
+          return offer
+        })
+        .then(offer =>
+          sendOfferToSignalServer(offer)
+        )
+    };
+
+    const checkAnswerAndSetRemoteDescription = () => {
+        fetch('http://localhost:3000/answers')
+          .then(resp => resp.json())
+          .then(description => clientAConnection.setRemoteDescription(description))
+    };
+
+    const fetchAndApplyIce = () => {
+      fetch('http://localhost:3000/candidates')
+        .then(resp => resp.json())
+        .then(json => {
+          console.log("found these candidates:", json)
+          json.candidates.forEach(c => clientAConnection.addIceCandidate(c.candidate))
+        })
+    };
+
+window.addEventListener('load', function() {
+    const createAndSendOffer = document.getElementById('createAndSendOffer');
+    createAndSendOffer.addEventListener('click', createOfferAndSendToSignalingServer)
+
+    const checkAnswerAndSetRemoteDescriptionButton = document.getElementById('checkAnswerAndSetRemoteDescription');
+    checkAnswerAndSetRemoteDescriptionButton.addEventListener('click', checkAnswerAndSetRemoteDescription)
+
+    const fetchAndApplyIceButton = document.getElementById('fetchAndApplyIce');
+    fetchAndApplyIceButton.addEventListener('click', fetchAndApplyIce);
+
+    const sendMessageButtond = document.getElementById('sendMessage');
+    sendMessageButtond.addEventListener('click', sendMessage)
+})
+</script>
+</html>
