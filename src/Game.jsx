@@ -10,6 +10,8 @@ class Game extends React.Component {
 
   peerConnection = new RTCPeerConnection();
 
+  messageInput = React.createRef();
+
   createOffer = () => {
     return this.peerConnection.createOffer()
   };
@@ -22,11 +24,47 @@ class Game extends React.Component {
     axios.post(`/.netlify/functions/sendAnswer?channel=${this.state.channel.name}`, body)
   };
 
+  sendIceCandidate = (body) => {
+    axios.post(`/.netlify/functions/sendIceCandidate?channel=${this.state.channel.name}`, body)
+  };
+
+  handleSubmit = (e) => {
+    e.preventDefault()
+    this.sendMessage(this.messageInput.current.value)
+  };
+
+  sendMessage = (msg) => {
+    console.log(this.sendChannel)
+    this.sendChannel.send(msg)
+  };
+
   componentDidMount() {
-    const sendChannel = this.peerConnection.createDataChannel("sendChannel");
-    sendChannel.onopen = (e) => console.log("A ON OPEN", e);
-    sendChannel.onclose = (e) => console.log("A ON CLOSE", e);
-    sendChannel.onmessage = (e) => console.log("A, RECEIVED MESSAGE:", e.data);
+    this.peerConnection.ondatachannel = (e) => {
+      console.log("ONDATACHANNEL FIRED")
+      if (!this.sendChannel) {
+        console.log(e)
+        this.sendChannel = e.channel
+      }
+    };
+
+    this.peerConnection.onicecandidate = (event) => {
+      console.log('SENDING ICE');
+
+      if (!event.candidate) { return }
+
+      const candidate = {
+        type: "candidate",
+        candidate: event.candidate
+      };
+
+      channel.members.each(member => {
+        this.sendIceCandidate({
+          iceRecipient: member.id,
+          iceMaker: channel.members.me.id,
+          candidate
+        });
+      });
+    }
 
     const channel = this.ws.subscribe(`presence-${this.gameName}-scrabble`);
     channel.bind("message", function(data) {
@@ -55,10 +93,16 @@ class Game extends React.Component {
           this.setState({ me, players });
       });
     });
+    channel.bind("iceCandidate", (data) => {
+      if (data.iceRecipient === this.state.me.id) {
+        console.log('APPLYING ICE');
+        this.peerConnection.addIceCandidate(data.candidate)
+      }
+    });
     channel.bind("rtcOffer", (data) => {
-      console.log(`offer: ${JSON.stringify(data, null, 2)}`);
+      // console.log(`offer: ${JSON.stringify(data, null, 2)}`);
       if (data.offerRecipient === this.state.me.id) {
-        console.log(`${this.state.me.id} received offer for ${data.offerRecipient}`);
+        // console.log(`${this.state.me.id} received offer for ${data.offerRecipient}`);
         this.peerConnection.setRemoteDescription(data.offer)
           .then(() => this.peerConnection.createAnswer())
           .then((answer) => {
@@ -72,10 +116,18 @@ class Game extends React.Component {
       }
     });
     channel.bind('rtcAnswer', (data) => {
-      console.log(`answer: ${JSON.stringify(data, null, 2)}`)
+      // console.log(`answer: ${JSON.stringify(data, null, 2)}`);
       if (data.answerRecipient === this.state.me.id) {
-        console.log(`${this.state.me.id} received answer for ${data.answerRecipient}`);
+        // console.log(`${this.state.me.id} received answer for ${data.answerRecipient}`);
         this.peerConnection.setRemoteDescription(data.answer)
+          .then(() => {
+            console.log('creating data channel')
+            this.sendChannel = this.peerConnection.createDataChannel("sendChannel");
+            this.sendChannel.onopen = (e) => console.log("A ON OPEN", e);
+            this.sendChannel.onclose = (e) => console.log("A ON CLOSE", e);
+            this.sendChannel.onmessage = (e) => console.log("A, RECEIVED MESSAGE:", e.data);
+            // console.log("sendChannel: ", this.sendChannel)
+          })
       }
     });
     channel.bind("pusher:member_added", () => {
@@ -100,6 +152,17 @@ class Game extends React.Component {
               <li key={player.id}>{player.id}</li>
             ))}
           </ul>
+          <dl>
+            <dt>
+              peerConnection.localDescription
+            </dt>
+            <dd>
+            </dd>
+          </dl>
+          <form onSubmit={this.handleSubmit}>
+            <input type="text" ref={this.messageInput}/>
+            <button type="submit" />
+          </form>
         </div>
       </div>
     );
