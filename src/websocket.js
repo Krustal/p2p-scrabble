@@ -5,7 +5,7 @@ export default username =>
   new Pusher(process.env.PUSHER_KEY, {
     cluster: "us2",
     forceTLS: true,
-    authEndpoint: `${process.env.FN_BASE}/auth`,
+    authEndpoint: `/.netlify/functions/auth`,
     auth: {
       params: {
         username

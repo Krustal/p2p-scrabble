@@ -9,3 +9,4 @@ ID = "7c11bd1d-a5d2-4854-bbab-1c0801b0c74b"
 [[redirects]]
   from = '/*'
   to = '/index.html'
+  status = 200
