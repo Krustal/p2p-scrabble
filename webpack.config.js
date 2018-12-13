@@ -14,25 +14,45 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.jsx?$/,
         exclude: /node_modules/,
         use: { loader: "babel-loader" }
       }
     ]
   },
   resolve: {
-    extensions: [".webpack.js", ".web.js", ".js"]
+    extensions: [".webpack.js", ".web.js", ".js", ".jsx"]
   },
   plugins: [
-    new webpack.EnvironmentPlugin(["NODE_ENV", "PUSHER_APP_ID", "PUSHER_KEY"]),
+    new webpack.EnvironmentPlugin([
+      "NODE_ENV",
+      "PUSHER_APP_ID",
+      "PUSHER_KEY",
+      "FN_BASE"
+    ]),
     new HtmlWebpackPlugin({
       template: "./src/index.html"
+    }),
+    new HtmlWebpackPlugin({
+      title: "404",
+      filename: "404.html",
+      inject: false
     })
   ],
   devtool: "inline-source-map",
   devServer: {
     contentBase: path.join(__dirname, "dist"),
     compress: true,
-    port: 9000
+    port: 9001,
+    overlay: true,
+    proxy: {
+      "/.netlify/functions": {
+        target: "http://localhost:9000",
+        pathRewrites: { "^/.netlify/functions": "" }
+      }
+    },
+    historyApiFallback: {
+      rewrites: [{ from: /[^\/#\?\&]*$/, to: "/index.html" }]
+    }
   }
 };
