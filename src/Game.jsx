@@ -13,44 +13,64 @@ class Game extends React.Component {
   messageInput = React.createRef();
 
   createOffer = () => {
-    return this.peerConnection.createOffer()
+    return this.peerConnection.createOffer();
   };
 
-  sendOffer = (body) => {
-    axios.post(`/.netlify/functions/sendOffer?channel=${this.state.channel.name}`, body)
+  sendOffer = body => {
+    axios.post(
+      `/.netlify/functions/sendOffer?channel=${this.state.channel.name}`,
+      body
+    );
   };
 
-  sendAnswer = (body) => {
-    axios.post(`/.netlify/functions/sendAnswer?channel=${this.state.channel.name}`, body)
+  sendAnswer = body => {
+    axios.post(
+      `/.netlify/functions/sendAnswer?channel=${this.state.channel.name}`,
+      body
+    );
   };
 
-  sendIceCandidate = (body) => {
-    axios.post(`/.netlify/functions/sendIceCandidate?channel=${this.state.channel.name}`, body)
+  sendIceCandidate = body => {
+    axios.post(
+      `/.netlify/functions/sendIce?channel=${this.state.channel.name}`,
+      body
+    );
   };
 
-  handleSubmit = (e) => {
-    e.preventDefault()
-    this.sendMessage(this.messageInput.current.value)
+  handleSubmit = e => {
+    e.preventDefault();
+    this.sendMessage(this.messageInput.current.value);
   };
 
-  sendMessage = (msg) => {
-    console.log(this.sendChannel)
-    this.sendChannel.send(msg)
+  sendMessage = msg => {
+    // console.log(this.sendChannel);
+    this.sendChannel.send(msg);
   };
 
   componentDidMount() {
-    this.peerConnection.ondatachannel = (e) => {
-      console.log("ONDATACHANNEL FIRED")
+    this.peerConnection.ondatachannel = e => {
+      console.log("ONDATACHANNEL FIRED");
       if (!this.sendChannel) {
-        console.log(e)
-        this.sendChannel = e.channel
+        console.log("setting send channel", e);
+        this.sendChannel = e.channel;
       }
+      console.log("send channel", this.sendChannel);
+      this.sendChannel.onopen = e => console.log("A ON OPEN", e);
+      this.sendChannel.onclose = e => console.log("A ON CLOSE", e);
+      this.sendChannel.onmessage = e =>
+        console.log("A, RECEIVED MESSAGE:", e.data);
     };
 
-    this.peerConnection.onicecandidate = (event) => {
-      console.log('SENDING ICE');
-
-      if (!event.candidate) { return }
+    this.peerConnection.onicecandidate = event => {
+      if (
+        !event.candidate ||
+        !this.peerConnection ||
+        !this.peerConnection.remoteDescription ||
+        !this.peerConnection.remoteDescription.type
+      ) {
+        return;
+      }
+      console.log("SENDING ICE");
 
       const candidate = {
         type: "candidate",
@@ -61,73 +81,81 @@ class Game extends React.Component {
         this.sendIceCandidate({
           iceRecipient: member.id,
           iceMaker: channel.members.me.id,
-          candidate
+          candidate: event.candidate
         });
       });
-    }
+    };
+
+    this.peerConnection.onnegotiationneeded = () => {
+      console.log("NEGOTIATION NEEDED!");
+      this.createOffer().then(offer => {
+        channel.members.each(member => {
+          const body = {
+            offerMaker: channel.members.me.id,
+            offerRecipient: member.id,
+            offer
+          };
+
+          this.peerConnection.setLocalDescription(offer);
+          this.sendOffer(JSON.stringify(body));
+        });
+      });
+    };
 
     const channel = this.ws.subscribe(`presence-${this.gameName}-scrabble`);
-    channel.bind("message", function(data) {
-      alert(JSON.stringify(data));
-    });
     channel.bind("pusher:subscription_succeeded", () => {
       const me = channel.members.me;
       let players = [];
-      this.createOffer()
-        .then((offer) => {
-          channel.members.each(member => {
-            players.push(member);
-
-            if (me.id === member.id) return;
-
-            const body = {
-              offerMaker: me.id,
-              offerRecipient: member.id,
-              offer
-            };
-
-            this.peerConnection.setLocalDescription(offer);
-            this.sendOffer(JSON.stringify(body));
-          });
-
-          this.setState({ me, players });
+      if (channel.members.count > 1) {
+        console.log("creating data channel");
+        this.sendChannel = this.peerConnection.createDataChannel("sendChannel");
+        this.sendChannel.onopen = e => console.log("A ON OPEN", e);
+        this.sendChannel.onclose = e => console.log("A ON CLOSE", e);
+        this.sendChannel.onmessage = e =>
+          console.log("A, RECEIVED MESSAGE:", e.data);
+      }
+      channel.members.each(member => {
+        players.push(member);
       });
+      this.setState({ me, players });
     });
-    channel.bind("iceCandidate", (data) => {
+    channel.bind("iceCandidate", data => {
       if (data.iceRecipient === this.state.me.id) {
-        console.log('APPLYING ICE');
-        this.peerConnection.addIceCandidate(data.candidate)
+        console.log("APPLYING ICE", data);
+        this.peerConnection.addIceCandidate(
+          data.candidate,
+          () => {},
+          err => {
+            console.error(err);
+          }
+        );
       }
     });
-    channel.bind("rtcOffer", (data) => {
+    channel.bind("rtcOffer", data => {
       // console.log(`offer: ${JSON.stringify(data, null, 2)}`);
       if (data.offerRecipient === this.state.me.id) {
         // console.log(`${this.state.me.id} received offer for ${data.offerRecipient}`);
-        this.peerConnection.setRemoteDescription(data.offer)
+        this.peerConnection
+          .setRemoteDescription(data.offer)
           .then(() => this.peerConnection.createAnswer())
-          .then((answer) => {
+          .then(answer => {
             this.sendAnswer({
               answerMaker: this.state.me.id,
               answerRecipient: data.offerMaker,
               answer
             });
-            this.peerConnection.setLocalDescription(answer)
-          })
+            this.peerConnection.setLocalDescription(answer);
+          });
       }
     });
-    channel.bind('rtcAnswer', (data) => {
+    channel.bind("rtcAnswer", data => {
       // console.log(`answer: ${JSON.stringify(data, null, 2)}`);
       if (data.answerRecipient === this.state.me.id) {
         // console.log(`${this.state.me.id} received answer for ${data.answerRecipient}`);
-        this.peerConnection.setRemoteDescription(data.answer)
-          .then(() => {
-            console.log('creating data channel')
-            this.sendChannel = this.peerConnection.createDataChannel("sendChannel");
-            this.sendChannel.onopen = (e) => console.log("A ON OPEN", e);
-            this.sendChannel.onclose = (e) => console.log("A ON CLOSE", e);
-            this.sendChannel.onmessage = (e) => console.log("A, RECEIVED MESSAGE:", e.data);
-            // console.log("sendChannel: ", this.sendChannel)
-          })
+        this.peerConnection.setRemoteDescription(data.answer).then(() => {
+          console.log("remote connection set");
+          // console.log("sendChannel: ", this.sendChannel)
+        });
       }
     });
     channel.bind("pusher:member_added", () => {
@@ -153,14 +181,11 @@ class Game extends React.Component {
             ))}
           </ul>
           <dl>
-            <dt>
-              peerConnection.localDescription
-            </dt>
-            <dd>
-            </dd>
+            <dt>peerConnection.localDescription</dt>
+            <dd />
           </dl>
           <form onSubmit={this.handleSubmit}>
-            <input type="text" ref={this.messageInput}/>
+            <input type="text" ref={this.messageInput} />
             <button type="submit" />
           </form>
         </div>
