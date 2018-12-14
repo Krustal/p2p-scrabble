@@ -72,3 +72,18 @@ h1 {
   background: #ab0300f2;
   border: #ef5350 solid 1px;
 }
+
+.game-state {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ef5350;
+  font-size: 5em;
+}

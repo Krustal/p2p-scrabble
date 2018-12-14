@@ -11,7 +11,8 @@ class Game extends React.Component {
     me: null,
     mySymbol: null, // X or O
     currentTurn: "X", // start every game with X
-    board: [[, , ,], [, , ,], [, , ,]]
+    board: [[, , ,], [, , ,], [, , ,]],
+    winner: null
   };
   ws = websocket(this.props.username);
   gameName = location.pathname.split("/")[1];
@@ -210,9 +211,11 @@ class Game extends React.Component {
     const cellHeight = board.children[0].offsetHeight;
     const fontSize = cellHeight * 0.8;
     this.setState({ symbolSize: fontSize });
-    // debugger;
   };
   makeMove = pos => () => {
+    if (this.state.winner) {
+      return;
+    }
     if (!this.sendChannel) {
       this.setState({ error: "No opponent" });
       return;
@@ -245,6 +248,71 @@ class Game extends React.Component {
   };
   componentWillUnmount() {
     this.peerConnection.close();
+  }
+  componentDidUpdate() {
+    if (!this.state.winner) {
+      const game = this.state.board;
+      const vert1 =
+        game[0][0] === game[1][0] &&
+        game[1][0] === game[2][0] /* ? */ &&
+        game[0][0] &&
+        game[1][0] &&
+        game[2][0];
+      const vert2 =
+        game[0][1] === game[1][1] &&
+        game[1][1] === game[2][1] /* ? */ &&
+        game[0][1] &&
+        game[1][1] &&
+        game[2][1]; /* ? */
+      const vert3 =
+        game[0][2] === game[1][2] &&
+        game[1][2] === game[2][2] /* ? */ &&
+        game[0][2] &&
+        game[1][2] &&
+        game[2][2]; /* ? */
+      const horiz1 =
+        game[0][0] === game[0][1] &&
+        game[0][1] === game[0][2] /* ? */ &&
+        game[0][0] &&
+        game[0][1] &&
+        game[0][2]; /* ? */
+      const horiz2 =
+        game[1][0] === game[1][1] &&
+        game[1][1] === game[1][2] /* ? */ &&
+        game[1][0] &&
+        game[1][1] &&
+        game[1][2]; /* ? */
+      const horiz3 =
+        game[2][0] === game[2][1] &&
+        game[2][1] === game[2][2] /* ? */ &&
+        game[2][0] &&
+        game[2][1] &&
+        game[2][2]; /* ? */
+      const diagonal1 =
+        game[0][0] === game[1][1] &&
+        game[1][1] === game[2][2] /* ? */ &&
+        game[0][0] &&
+        game[1][1] &&
+        game[2][2]; /* ? */
+      const diagonal2 =
+        game[0][2] === game[1][1] &&
+        game[1][1] === game[2][0] /* ? */ &&
+        game[0][2] &&
+        game[1][1] &&
+        game[2][0];
+      const winner =
+        diagonal1 ||
+        diagonal2 ||
+        horiz1 ||
+        horiz2 ||
+        horiz3 ||
+        vert1 ||
+        vert2 ||
+        vert3;
+      if (winner) {
+        this.setState({ winner });
+      }
+    }
   }
   render() {
     let opponentSymbol = undefined;
@@ -281,6 +349,12 @@ class Game extends React.Component {
           </h1>
           {this.state.error ? (
             <div className="error">{this.state.error}</div>
+          ) : null}
+          {this.state.winner && this.state.winner === this.state.mySymbol ? (
+            <div className="game-state">YOU WIN!</div>
+          ) : null}
+          {this.state.winner && this.state.winner !== this.state.mySymbol ? (
+            <div className="game-state">YOU LOSE!"</div>
           ) : null}
           <div className="board" ref={this.boardRef}>
             <div className="cell" onClick={this.makeMove([0, 0])}>
