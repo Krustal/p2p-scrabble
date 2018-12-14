@@ -14,7 +14,6 @@ class Game extends React.Component {
     board: [[, , ,], [, , ,], [, , ,]]
   };
   ws = websocket(this.props.username);
-  // TODO: make this require a more conforming GUID
   gameName = location.pathname.split("/")[1];
 
   peerConnection = new RTCPeerConnection();
@@ -233,9 +232,38 @@ class Game extends React.Component {
     this.peerConnection.close();
   }
   render() {
+    let opponentSymbol = undefined;
+    if (this.state.mySymbol) {
+      opponentSymbol = this.state.mySymbol === "X" ? "O" : "X";
+    }
     return (
       <div>
         <div>
+          <h1>
+            <span
+              className={`player-symbol player-symbol-${this.state.mySymbol}`}
+            >
+              {this.state.mySymbol}
+            </span>{" "}
+            <span className="player-id">{this.props.username}</span> vs.&nbsp;
+            {this.state.players.length
+              ? this.state.players
+                  .filter(({ id }) => id !== this.state.me.id)
+                  .map(player => (
+                    <React.Fragment>
+                      <span
+                        className={`player-symbol player-symbol-${opponentSymbol}`}
+                      >
+                        {opponentSymbol}
+                      </span>
+                      &nbsp;
+                      <span className="player-id" key={player.id}>
+                        {player.id}
+                      </span>
+                    </React.Fragment>
+                  ))
+              : "..."}
+          </h1>
           <div className="board" ref={this.boardRef}>
             <div className="cell" onClick={this.makeMove([0, 0])}>
               <div
@@ -310,12 +338,6 @@ class Game extends React.Component {
               </div>
             </div>
           </div>
-          <h3>Players</h3>
-          <ul>
-            {this.state.players.map(player => (
-              <li key={player.id}>{player.id}</li>
-            ))}
-          </ul>
           <form onSubmit={this.handleSubmit}>
             <input type="text" ref={this.messageInput} />
             <button type="submit" />
