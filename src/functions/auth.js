@@ -21,15 +21,31 @@ exports.handler = function(event, context, callback) {
       return params;
     }, {});
   const { socket_id: socketId, channel_name: channel, username } = parsedBody;
-  const presenceData = {
-    user_id: username
-  };
-  console.log("auth params", socketId, channel, presenceData);
-  const auth = pusher.authenticate(socketId, channel, presenceData);
-  console.log("auth", auth);
-  callback(null, {
-    statusCode: 200,
-    headers: { "Content-Type": "application/javascript" },
-    body: JSON.stringify(auth)
-  });
+  const presenceUsers = pusher.get(
+    { path: `/channels/${channel}/users` },
+    (err, req, res) => {
+      if (res.statusCode === 200) {
+        const result = JSON.parse(res.body);
+        console.log("current players", result.users);
+        if (result.users.length < 2) {
+          const presenceData = {
+            user_id: username
+          };
+
+          const auth = pusher.authenticate(socketId, channel, presenceData);
+          callback(null, {
+            statusCode: 200,
+            headers: { "Content-Type": "application/javascript" },
+            body: JSON.stringify(auth)
+          });
+        } else {
+          callback(null, {
+            statusCode: 403,
+            headers: { "Content-Type": "application/javascript" },
+            body: JSON.stringify({ status: "already 2 users in game" })
+          });
+        }
+      }
+    }
+  );
 };
