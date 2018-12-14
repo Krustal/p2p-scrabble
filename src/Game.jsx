@@ -180,10 +180,6 @@ class Game extends React.Component {
               <li key={player.id}>{player.id}</li>
             ))}
           </ul>
-          <dl>
-            <dt>peerConnection.localDescription</dt>
-            <dd />
-          </dl>
           <form onSubmit={this.handleSubmit}>
             <input type="text" ref={this.messageInput} />
             <button type="submit" />
