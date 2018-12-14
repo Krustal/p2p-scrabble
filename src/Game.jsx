@@ -2,8 +2,17 @@ import React from "react";
 import axios from "axios";
 import websocket from "./websocket";
 
+import "./game.scss";
+
 class Game extends React.Component {
-  state = { channel: null, players: [], me: null };
+  state = {
+    channel: null,
+    players: [],
+    me: null,
+    mySymbol: null, // X or O
+    currentTurn: "X", // start every game with X
+    board: [[, , ,], [, , ,], [, , ,]]
+  };
   ws = websocket(this.props.username);
   // TODO: make this require a more conforming GUID
   gameName = location.pathname.split("/")[1];
@@ -11,6 +20,7 @@ class Game extends React.Component {
   peerConnection = new RTCPeerConnection();
 
   messageInput = React.createRef();
+  boardRef = React.createRef();
 
   createOffer = () => {
     return this.peerConnection.createOffer();
@@ -43,7 +53,7 @@ class Game extends React.Component {
   };
 
   sendMessage = msg => {
-    // console.log(this.sendChannel);
+    console.log("sending message", this.sendChannel, msg);
     this.sendChannel.send(msg);
   };
 
@@ -57,8 +67,17 @@ class Game extends React.Component {
       console.log("send channel", this.sendChannel);
       this.sendChannel.onopen = e => console.log("A ON OPEN", e);
       this.sendChannel.onclose = e => console.log("A ON CLOSE", e);
-      this.sendChannel.onmessage = e =>
-        console.log("A, RECEIVED MESSAGE:", e.data);
+      this.sendChannel.onmessage = e => {
+        console.log("got message", e.data);
+        let instruction;
+        try {
+          instruction = JSON.parse(e.data);
+        } catch (e) {
+          console.error(e);
+          return;
+        }
+        this.gotMove(instruction);
+      };
     };
 
     this.peerConnection.onicecandidate = event => {
@@ -107,13 +126,25 @@ class Game extends React.Component {
       const me = channel.members.me;
       let players = [];
       if (channel.members.count > 1) {
+        this.setState({ mySymbol: "O" }); // second player is always O
         console.log("creating data channel");
         // TODO: refactor this to support >2 players in a game
         this.sendChannel = this.peerConnection.createDataChannel("sendChannel");
         this.sendChannel.onopen = e => console.log("A ON OPEN", e);
         this.sendChannel.onclose = e => console.log("A ON CLOSE", e);
-        this.sendChannel.onmessage = e =>
-          console.log("A, RECEIVED MESSAGE:", e.data);
+        this.sendChannel.onmessage = e => {
+          console.log("got message", e.data);
+          let instruction;
+          try {
+            instruction = JSON.parse(e.data);
+          } catch (e) {
+            console.error(e);
+            return;
+          }
+          this.gotMove(instruction);
+        };
+      } else {
+        this.setState({ mySymbol: "X" });
       }
       channel.members.each(member => {
         players.push(member);
@@ -171,7 +202,32 @@ class Game extends React.Component {
       this.sendChannel && this.sendChannel.close();
     });
     this.setState({ channel });
+    window.onresize = this.resizeBoard;
+    this.resizeBoard();
   }
+  resizeBoard = () => {
+    const board = this.boardRef.current;
+    const cellHeight = board.children[0].offsetHeight;
+    const fontSize = cellHeight * 0.86;
+    this.setState({ symbolSize: fontSize });
+    // debugger;
+  };
+  makeMove = pos => () => {
+    console.log("placing", this.state.mySymbol, "at", pos);
+    this.sendMessage(
+      JSON.stringify({ type: "move", symbol: this.state.mySymbol, pos })
+    );
+    const currentBoard = this.state.board;
+    const newBoard = [...currentBoard];
+    newBoard[pos[0]][pos[1]] = this.state.mySymbol;
+    this.setState({ board: newBoard });
+  };
+  gotMove = instruction => {
+    const currentBoard = this.state.board;
+    const newBoard = [...currentBoard];
+    newBoard[instruction.pos[0]][instruction.pos[1]] = instruction.symbol;
+    this.setState({ board: newBoard });
+  };
   componentWillUnmount() {
     this.peerConnection.close();
   }
@@ -179,6 +235,80 @@ class Game extends React.Component {
     return (
       <div>
         <div>
+          <div className="board" ref={this.boardRef}>
+            <div className="cell" onClick={this.makeMove([0, 0])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {/* {this.state.board[0][0]} */}X
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([1, 0])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[1][0]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([2, 0])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[2][0]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([0, 1])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[0][1]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([1, 1])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[1][1]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([2, 1])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[2][1]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([0, 2])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[0][2]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([1, 2])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[1][2]}
+              </div>
+            </div>
+            <div className="cell" onClick={this.makeMove([2, 2])}>
+              <div
+                className="symbol"
+                style={{ fontSize: this.state.symbolSize }}
+              >
+                {this.state.board[2][2]}
+              </div>
+            </div>
+          </div>
           <h3>Players</h3>
           <ul>
             {this.state.players.map(player => (

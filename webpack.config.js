@@ -17,6 +17,22 @@ module.exports = {
         test: /\.jsx?$/,
         exclude: /node_modules/,
         use: { loader: "babel-loader" }
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          "style-loader",
+          {
+            loader: "css-loader",
+            query: {
+              importLoaders: 1,
+              localIdentName: "[path]___[name]__[local]___[hash:base64:5]"
+            }
+          },
+          { loader: "postcss-loader" },
+          { loader: "resolve-url-loader" },
+          { loader: "sass-loader", query: { sourceMap: true } }
+        ]
       }
     ]
   },

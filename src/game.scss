@@ -1,0 +1,24 @@
+.board {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-gap: 10px;
+  place-items: start;
+  margin-bottom: 20px;
+
+  > .cell {
+    border: solid orange 1px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: sans-serif;
+
+    &::before {
+      content: "";
+      display: inline-block;
+      width: 1px;
+      height: 0;
+      padding-bottom: calc(100%);
+    }
+  }
+}
