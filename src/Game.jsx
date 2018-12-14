@@ -213,20 +213,35 @@ class Game extends React.Component {
     // debugger;
   };
   makeMove = pos => () => {
-    console.log("placing", this.state.mySymbol, "at", pos);
+    if (!this.sendChannel) {
+      this.setState({ error: "No opponent" });
+      return;
+    }
+    if (this.state.currentTurn !== this.state.mySymbol) {
+      this.setState({ error: "It's not your turn" });
+      return;
+    }
+    this.setState({ error: "" });
     this.sendMessage(
       JSON.stringify({ type: "move", symbol: this.state.mySymbol, pos })
     );
     const currentBoard = this.state.board;
     const newBoard = [...currentBoard];
     newBoard[pos[0]][pos[1]] = this.state.mySymbol;
-    this.setState({ board: newBoard });
+    this.setState({
+      board: newBoard,
+      currentTurn: this.state.currentTurn === "X" ? "O" : "X"
+    });
   };
   gotMove = instruction => {
     const currentBoard = this.state.board;
     const newBoard = [...currentBoard];
     newBoard[instruction.pos[0]][instruction.pos[1]] = instruction.symbol;
-    this.setState({ board: newBoard });
+    this.setState({
+      board: newBoard,
+      currentTurn: this.state.currentTurn === "X" ? "O" : "X",
+      error: ""
+    });
   };
   componentWillUnmount() {
     this.peerConnection.close();
@@ -264,6 +279,9 @@ class Game extends React.Component {
                   ))
               : "..."}
           </h1>
+          {this.state.error ? (
+            <div className="error">{this.state.error}</div>
+          ) : null}
           <div className="board" ref={this.boardRef}>
             <div className="cell" onClick={this.makeMove([0, 0])}>
               <div
