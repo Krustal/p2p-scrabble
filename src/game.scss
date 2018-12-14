@@ -1,17 +1,28 @@
+body {
+  background: #011627;
+  color: #7e57c2;
+  text-align: center;
+}
+
 .board {
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-gap: 10px;
   place-items: start;
   margin-bottom: 20px;
+  max-width: 800px;
+  background: #e2b93d;
 
   > .cell {
-    border: solid orange 1px;
+    // border: solid orange 1px;
+    background: #011627;
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: sans-serif;
+    font-family: "Helvetica Neue", sans-serif;
+    font-weight: 200;
 
     &::before {
       content: "";
@@ -20,5 +31,9 @@
       height: 0;
       padding-bottom: calc(100%);
     }
+  }
+
+  .symbol-O {
+    color: #addb67;
   }
 }

@@ -206,9 +206,10 @@ class Game extends React.Component {
     this.resizeBoard();
   }
   resizeBoard = () => {
+    console.log("resizing board");
     const board = this.boardRef.current;
     const cellHeight = board.children[0].offsetHeight;
-    const fontSize = cellHeight * 0.86;
+    const fontSize = cellHeight * 0.8;
     this.setState({ symbolSize: fontSize });
     // debugger;
   };
@@ -238,15 +239,15 @@ class Game extends React.Component {
           <div className="board" ref={this.boardRef}>
             <div className="cell" onClick={this.makeMove([0, 0])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[0][0]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
-                {/* {this.state.board[0][0]} */}X
+                {this.state.board[0][0]}
               </div>
             </div>
             <div className="cell" onClick={this.makeMove([1, 0])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[1][0]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[1][0]}
@@ -254,7 +255,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([2, 0])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[2][0]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[2][0]}
@@ -262,7 +263,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([0, 1])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[0][1]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[0][1]}
@@ -270,7 +271,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([1, 1])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[1][1]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[1][1]}
@@ -278,7 +279,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([2, 1])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[2][1]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[2][1]}
@@ -286,7 +287,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([0, 2])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[0][2]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[0][2]}
@@ -294,7 +295,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([1, 2])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[1][2]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[1][2]}
@@ -302,7 +303,7 @@ class Game extends React.Component {
             </div>
             <div className="cell" onClick={this.makeMove([2, 2])}>
               <div
-                className="symbol"
+                className={`symbol symbol-${this.state.board[2][2]}`}
                 style={{ fontSize: this.state.symbolSize }}
               >
                 {this.state.board[2][2]}
