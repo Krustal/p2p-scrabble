@@ -108,6 +108,7 @@ class Game extends React.Component {
       let players = [];
       if (channel.members.count > 1) {
         console.log("creating data channel");
+        // TODO: refactor this to support >2 players in a game
         this.sendChannel = this.peerConnection.createDataChannel("sendChannel");
         this.sendChannel.onopen = e => console.log("A ON OPEN", e);
         this.sendChannel.onclose = e => console.log("A ON CLOSE", e);
@@ -167,8 +168,12 @@ class Game extends React.Component {
       let players = [];
       channel.members.each(member => players.push(member));
       this.setState({ players });
+      this.sendChannel && this.sendChannel.close();
     });
     this.setState({ channel });
+  }
+  componentWillUnmount() {
+    this.peerConnection.close();
   }
   render() {
     return (
